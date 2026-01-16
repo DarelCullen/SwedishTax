@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skattekalkylator 2025</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Input Section -->
+        <div class="card input-section">
+            <h1>Skattekalkylator</h1>
+
+            <div class="form-group">
+                <label for="year">Inkomstår</label>
+                <select id="year">
+                    <option value="2025" selected>2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                    <option value="2019">2019</option>
+                    <option value="2018">2018</option>
+                    <option value="2017">2017</option>
+                    <option value="2016">2016</option>
+                    <option value="2015">2015</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="income">Månadslön (brutto SEK)</label>
+                <input type="number" id="income" value="35000" min="0" step="500">
+            </div>
+
+            <div class="form-group">
+                <label for="municipality">Kommun</label>
+                <select id="municipality">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="age">Ålder</label>
+                <select id="age">
+                    <option value="0">Under 66 år</option>
+                    <option value="1">66 år eller äldre</option>
+                </select>
+            </div>
+
+            <div class="toggle-group">
+                <label for="church">Medlem i Svenska Kyrkan?</label>
+                <label class="switch">
+                    <input type="checkbox" id="church" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateTax()">Beräkna Skatt</button>
+        </div>
+
+        <!-- Result Section -->
+        <div class="card result-section">
+            <div class="result-header">
+                <div class="net-income-label">Din Lön Efter Skatt</div>
+                <div class="net-income-value" id="result-net">0 kr</div>
+                <div class="net-income-sub">per månad (<span id="result-net-year">0 kr</span> / år)</div>
+            </div>
+
+            <h2>Detaljer (Per Månad)</h2>
+
+            <div class="result-item">
+                <span class="item-label">Bruttolön</span>
+                <span class="item-value" id="val-gross">0 kr</span>
+            </div>
+
+            <div class="result-item">
+                <span class="item-label">Kommunal & Regionskatt</span>
+                <span class="item-value fee" id="val-municipal">0 kr</span>
+            </div>
+
+            <div class="result-item">
+                <span class="item-label">Statlig Skatt</span>
+                <span class="item-value fee" id="val-state">0 kr</span>
+            </div>
+
+            <div class="result-item">
+                <span class="item-label">Avgifter (Kyrka, mm.)</span>
+                <span class="item-value fee" id="val-fees">0 kr</span>
+            </div>
+
+            <div class="result-item">
+                <span class="item-label">Jobbskatteavdrag</span>
+                <span class="item-value deduction" id="val-jsa">0 kr</span>
+            </div>
+
+            <div class="result-item total">
+                <span class="item-label">Total Skatt</span>
+                <span class="item-value fee" id="val-total-tax">0 kr</span>
+            </div>
+
+            <div class="chart-container">
+                <div class="bar-segment bar-tax" id="bar-tax" style="width: 30%"></div>
+                <div class="bar-segment bar-net" id="bar-net" style="width: 70%"></div>
+            </div>
+            <div
+                style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem; color: #94a3b8;">
+                <span>Skatt</span>
+                <span>Netto</span>
+            </div>
+
+            <div class="history-chart-wrapper" style="margin-top: 30px;">
+                <h2>Utveckling (2015-2025)</h2>
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
