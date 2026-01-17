@@ -425,7 +425,8 @@ function calculateTax() {
 
 
 function updateHistoryChart() {
-    const ctx = document.getElementById('historyChart').getContext('2d');
+    const canvas = document.getElementById('historyChart');
+    const ctx = canvas.getContext('2d');
 
     // Get current fixed params (except year)
     let incomeMonth = parseFloat(document.getElementById('income').value) || 0;
@@ -447,6 +448,27 @@ function updateHistoryChart() {
         chartInstance.destroy(); // Clear old chart
     }
 
+    // Colors
+    const colorLeft = '#ef4444'; // Red-500
+    const colorRight = '#3b82f6'; // Blue-500
+    const colorLeftFill = 'rgba(239, 68, 68, 0.2)';
+    const colorRightFill = 'rgba(59, 130, 246, 0.2)';
+
+    // Gradient Calculation
+    // We need to know the pixel position of 2022 to switch the gradient.
+    // Since we don't have the chart instance fully rendered to get exact pixels yet,
+    // we can use a scriptable option for backgroundColor or approximate it if the axis is linear.
+    // However, Chart.js context is best accessed inside a plugin or after render.
+    // A simpler approach for the fill is to use a linear gradient based on the known axis ratio.
+    // 2015 (index 0) to 2025 (index 10). Total 10 segments / intervals.
+    // 2022 is index 7.
+    // Split point: 7 / 10 = 0.7 (70% across)
+
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0); // Horizontal gradient
+    // Note: canvas.width might not be accurate before render layout, but often close enough for rough ratio if responsive.
+    // BETTER: Use a Function for backgroundColor to return the gradient using the chart area.
+
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -454,12 +476,67 @@ function updateHistoryChart() {
             datasets: [{
                 label: 'Nettolön (kr/mån)',
                 data: dataPoints,
-                borderColor: '#38bdf8', // Accent color
-                backgroundColor: 'rgba(56, 189, 248, 0.2)',
                 borderWidth: 3,
-                pointBackgroundColor: '#4f46e5',
                 fill: true,
-                tension: 0.4 // Smooth curves
+                tension: 0.4,
+                // Segment styling for the Line
+                segment: {
+                    borderColor: ctx => {
+                        // ctx.p0 is the start point, ctx.p1 is the end point of the segment
+                        // p0DataIndex is the index of the start point
+                        const index = ctx.p0DataIndex;
+                        const year = years[index];
+                        // If the segment starts at 2022 or later, it connects to 2023+, so assume "Transition" or "Right".
+                        // Transition 2022->2023: Let's color it Blue (Right) as the change happened end of 2022.
+                        return year >= 2022 ? colorRight : colorLeft;
+                    }
+                },
+                // Point styling
+                pointBackgroundColor: ctx => {
+                    const index = ctx.dataIndex;
+                    const year = years[index];
+                    return year > 2022 ? colorRight : colorLeft;
+                },
+                // Background Fill using Scriptable Option to get Chart Area
+                backgroundColor: (context) => {
+                    const chart = context.chart;
+                    const { ctx, chartArea, scales } = chart;
+                    if (!chartArea) return null; // Wait for chart area
+
+                    const leftYearIndex = 0; // 2015
+                    const rightYearIndex = 10; // 2025
+                    const switchYearIndex = 7; // 2022
+
+                    // X positions
+                    const xAxis = scales.x;
+                    if (!xAxis) return null;
+
+                    const xStart = xAxis.getPixelForValue(years[leftYearIndex]);
+                    const xEnd = xAxis.getPixelForValue(years[rightYearIndex]);
+                    const xSwitch = xAxis.getPixelForValue(years[switchYearIndex]);
+
+                    if (!isFinite(xStart) || !isFinite(xEnd) || !isFinite(xSwitch)) {
+                        return colorLeftFill; // Fallback
+                    }
+
+                    const gradient = ctx.createLinearGradient(xStart, 0, xEnd, 0);
+
+                    // Calculate stop position (0 to 1)
+                    const totalWidth = xEnd - xStart;
+                    if (totalWidth <= 0) return colorLeftFill;
+
+                    let switchPos = (xSwitch - xStart) / totalWidth;
+
+                    // Clamp switchPos to 0-1 to be safe
+                    switchPos = Math.max(0, Math.min(1, switchPos));
+
+                    gradient.addColorStop(0, colorLeftFill);
+                    gradient.addColorStop(switchPos, colorLeftFill);
+                    gradient.addColorStop(switchPos, colorRightFill);
+                    gradient.addColorStop(1, colorRightFill);
+
+                    return gradient;
+                }
             }]
         },
         options: {
@@ -467,6 +544,24 @@ function updateHistoryChart() {
             plugins: {
                 legend: {
                     labels: { color: '#f8fafc' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        },
+                        afterLabel: function (context) {
+                            const year = years[context.dataIndex];
+                            return year <= 2022 ? "Regering: S/MP (Vänster)" : "Regering: M/KD/L/SD (Höger)";
+                        }
+                    }
                 }
             },
             scales: {
